@@ -45,7 +45,8 @@
                         <v-row>
                             <v-col cols="6">
                                 <v-date-picker title="Start Date" v-model="task.start_date"
-                                   
+                                    
+                                    :allowed-dates="date => date < task.due_date"
                                     :rules="[
                                         (v: string | Date | null) => !!v || 'Start date is required',
                                         (v: string | Date | null) => v && v < task.due_date || 'Start date must be before due date'
@@ -54,10 +55,16 @@
                             <v-col cols="6">
                                 <v-date-picker title="Due Date" v-model="task.due_date"
                                     
+                                    :allowed-dates="date => date > task.start_date"
                                     :rules="[
                                         (v: string | Date | null) => !!v || 'Due date is required',
                                         (v: string | Date | null) => v && v > task.start_date || 'Due date must be after start date'
                                     ]" required />
+                            </v-col>
+                        </v-row>
+                        <v-row>
+                            <v-col>
+                                <v-textarea label="Description" v-model="task.description" />
                             </v-col>
                         </v-row>
                         <v-row class="mt-4 mb-4">
@@ -104,13 +111,14 @@ const estimateTime = computed(() => {
     if (!task.start_date || !task.due_date) return 0;
 
     // Ensure we're working with Date objects
+    const ESTIMATED_HOURS_IN_DAY = 8;
     const startDate = date.date(task.start_date) as Date;
     const dueDate = date.date(task.due_date) as Date;
     if (!date.isValid(startDate) || !date.isValid(dueDate)) return 0;
     if (date.isAfter(dueDate, startDate) || date.isSameDay(dueDate, startDate)) {
-        const estimate = date.getDate(dueDate) - date.getDate(startDate);
+        const estimate = date.getDiff(dueDate, startDate, 'days')
         const days = defaultTo(estimate, 1);
-        const hours = (days + 1) * 8;
+        const hours = days * ESTIMATED_HOURS_IN_DAY;
         return hours;
     }
 
@@ -146,6 +154,8 @@ onMounted(async () => {
         if (!fetchedTask) {
             throw new Error('Task not found');
         }
+        fetchedTask.start_date = date.date(fetchedTask.start_date) as Date;
+        fetchedTask.due_date = date.date(fetchedTask.due_date) as Date;
         Object.assign(task, fetchedTask);
     } catch (error: any) {
         globalStore.setError(error);
