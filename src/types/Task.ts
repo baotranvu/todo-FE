@@ -9,4 +9,5 @@ export interface Task {
     start_date?: string | Date;
     due_date?: string | Date;
     progress?: number;
+    description?: string;
 }
